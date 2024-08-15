@@ -1,38 +1,43 @@
 using System;
+// ReSharper disable UnusedMember.Global
+// ReSharper disable InconsistentNaming
+#pragma warning disable CS9113 // Parameter is unread.
 
 namespace MiniDecorator;
 
-public static class DecoratorTemplateExpression
+public static class DecoratorTemplate
 {
-    public const string Name = "##Name##";
+    public const string MethodName = "##MethodOrClassName##";
+    public const string ClassName = "##MethodOrClassName##";
     public const string ReturnType = "##ReturnType##";
-}
-
-public static class ParameterListExpression
-{
-    public const string _ = "##ParameterList##";
-}
-
-public static class ArgumentPlaceHolder
-{
-    public const string _1 = "##Args:1##";
-    public const string _2 = "##Args:2##";
+    public const string ParameterList = "##ParameterList##";
+    public const string ParameterList_Skip1 = "##ParameterList_Skip1##";
+    public const string Argument_1 = "##Args_11##";
+    public const string Argument_2 = "##Args_2##";
 }
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
-public sealed class DecorateWithAttribute(string template) : System.Attribute;
+public sealed class DecorateWithAttribute(string template) : Attribute;
+
 
 public partial class Sample
 {
     public const string Template =$$"""
-         public string Decoreated{{DecoratorTemplateExpression.Name}}({{ParameterListExpression._}}}
+         public string Decoreated{{DecoratorTemplate.MethodName}}({{DecoratorTemplate.ParameterList}}}
          {
          #if DEBUG
              System.Console.WriteLine($"Ok, DebugMode Decorator Call...");
          #endif
-             
-             {{DecoratorTemplateExpression.Name}}({{ParameterListExpression._}});
-             return "Ok Invoked";
+             try
+             {
+                 System.Console.WriteLine($"Before Call");
+                 {{DecoratorTemplate.MethodName}}({{DecoratorTemplate.ParameterList}});
+                 return "Ok, Decoration Completed"
+             }
+             catch (Exception e)
+             {
+                  return $"Exception Occured: {e}";
+             }
          }
          """;
     
