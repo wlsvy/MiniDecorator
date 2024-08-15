@@ -1,0 +1,62 @@
+# Visual Studio 관련
+.vs/
+*.user
+*.suo
+*.sln.docstates
+
+# Build 결과물
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa]ppPackages/
+*.log
+
+# Rider 관련
+.idea/
+*.sln.iml
+
+# Visual Studio Code 관련
+.vscode/
+*.code-workspace
+.vscode/settings.json
+
+# Mono Auto Generated Files
+mono_crash.*
+
+# Windows 파일들
+Thumbs.db
+ehthumbs.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+*.lnk
+
+# MacOS 파일들
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# 기타 파일들
+*.tmproj
+*.csproj.user
+*.csproj.vspscc
+*.csproj.webinfo
+*.pidb
+*.pdb
+*.pfx
+*.p12
+*.dbmdl
+*.opendb
+*.publish.xml
+
+# DotNet 사용자 비밀번호
+*.dotsettings.user
+*.dotcover
+

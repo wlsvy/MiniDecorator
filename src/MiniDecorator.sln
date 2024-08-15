@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniDecorator", "MiniDecorator\MiniDecorator\MiniDecorator.csproj", "{3D909B87-8A82-4787-8635-AD4CAF9FFDCB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniDecorator.Tests", "MiniDecorator\MiniDecorator.Tests\MiniDecorator.Tests.csproj", "{CD97CEAA-8395-4139-8063-D16D493EEAB3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3D909B87-8A82-4787-8635-AD4CAF9FFDCB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D909B87-8A82-4787-8635-AD4CAF9FFDCB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D909B87-8A82-4787-8635-AD4CAF9FFDCB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D909B87-8A82-4787-8635-AD4CAF9FFDCB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CD97CEAA-8395-4139-8063-D16D493EEAB3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CD97CEAA-8395-4139-8063-D16D493EEAB3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CD97CEAA-8395-4139-8063-D16D493EEAB3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CD97CEAA-8395-4139-8063-D16D493EEAB3}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
