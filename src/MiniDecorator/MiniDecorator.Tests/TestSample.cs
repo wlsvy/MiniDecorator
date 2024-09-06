@@ -11,3 +11,9 @@ public sealed class TestSample
     }
     
 }
+
+public class Sample
+{
+    [AutoNotify]
+    public string foo = "n";
+}

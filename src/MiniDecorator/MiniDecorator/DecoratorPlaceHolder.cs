@@ -19,6 +19,8 @@ public static class DecoratorTemplate
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
 public sealed class DecorateWithAttribute(string template) : Attribute;
 
+[AttributeUsage(AttributeTargets.Field | AttributeTargets.Method)]
+public sealed class AutoNotifyAttribute : Attribute;
 
 public partial class Sample
 {

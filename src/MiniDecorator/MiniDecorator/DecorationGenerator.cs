@@ -6,22 +6,23 @@ using System.Collections.Concurrent;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Humanizer;
 
 namespace MiniDecorator;
 
-[Generator]
-public sealed class DecorationGenerator : ISourceGenerator
-{
-    public void Initialize(GeneratorInitializationContext context)
-    {
+//[Generator]
+//public sealed class DecorationGenerator : ISourceGenerator
+//{
+//    public void Initialize(GeneratorInitializationContext context)
+//    {
         
-    }
+//    }
 
-    public void Execute(GeneratorExecutionContext context)
-    {
-        throw new NotImplementedException();
-    }
-}
+//    public void Execute(GeneratorExecutionContext context)
+//    {
+//        throw new NotImplementedException();
+//    }
+//}
 
 
 
@@ -63,9 +64,8 @@ public class AutoNotifyGenerator : ISourceGenerator
                             // 클래스 및 필드 이름 추출
                             string className = classDeclaration.Identifier.Text;
                             string fieldName = variable.Identifier.Text;
-                            string propertyName = char.ToUpper(fieldName[0]) + fieldName.Substring(1);
+                            string propertyName = fieldName.Pascalize();
 
-                            // Raw string literal을 사용하여 코드 생성
                             string generatedCode = $$"""
                                 namespace {{context.Compilation.AssemblyName}}
                                 {
