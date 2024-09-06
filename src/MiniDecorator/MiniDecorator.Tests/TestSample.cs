@@ -1,4 +1,5 @@
 ﻿using System;
+using Humanizer;
 using Xunit;
 
 namespace MiniDecorator.Tests;
@@ -12,7 +13,7 @@ public sealed class TestSample
     public void Test1()
     {
         Sample t = new Sample();
-        _ = t.Foo;
+        Assert.Equal("Foo", t.Foo.Pascalize());
     }
     
 }
@@ -20,5 +21,5 @@ public sealed class TestSample
 public partial class Sample
 {
     [AutoNotify]
-    public string foo;
+    public string foo = "foo";
 }
