@@ -59,7 +59,7 @@ public class AutoNotifyGenerator : ISourceGenerator
                             // 클래스 및 필드 이름 추출
                             string className = classDeclaration.Identifier.Text;
                             string fieldName = variable.Identifier.Text;
-                            string propertyName = char.ToUpper(fieldName[0]) + fieldName[1..];
+                            string propertyName = fieldName.Pascalizer();
                             //string propertyName = fieldName.Pascalize();
 
                             
