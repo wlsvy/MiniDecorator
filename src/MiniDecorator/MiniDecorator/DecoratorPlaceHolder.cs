@@ -10,6 +10,7 @@ public static class DecoratorTemplate
     public const string MethodName = "##MethodOrClassName##";
     public const string ClassName = "##MethodOrClassName##";
     public const string ReturnType = "##ReturnType##";
+    public const string ParameterListWithType = "##ParameterListWithType##";
     public const string ParameterList = "##ParameterList##";
     public const string ParameterList_Skip1 = "##ParameterList_Skip1##";
     public const string Argument_1 = "##Args_11##";
@@ -18,6 +19,24 @@ public static class DecoratorTemplate
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
 public sealed class DecorateWithAttribute(string template) : Attribute;
+
+public abstract class DecorateBaseAttribute(string template) : Attribute;
+
+public sealed class DecoWithTryCatch() : DecorateBaseAttribute(
+    template:$$"""
+        public {{DecoratorTemplate.ReturnType}} {{DecoratorTemplate.MethodName}}WithTryCatch({{DecoratorTemplate.ParameterListWithType}})
+        {
+            try
+            {
+                return {{DecoratorTemplate.MethodName}}({{DecoratorTemplate.ParameterList}});
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return default;
+            }
+        }
+        """);
 
 [AttributeUsage(AttributeTargets.Field | AttributeTargets.Method)]
 public sealed class AutoNotifyAttribute : Attribute;
