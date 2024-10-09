@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>netstandard2.1</TargetFramework>
+        <!-- SourceGenerator 는 .netstandard 2.0 과 버전 호환성이 제일 좋다고 한다. -->
+        <TargetFramework>.netstandard2.0</TargetFramework>
         <IsPackable>false</IsPackable>
-        <Nullable>enable</Nullable>
         <LangVersion>latest</LangVersion>
         <!-- 👇 We don't want to reference the source generator dll directly in consuming projects -->
         <IncludeBuildOutput>false</IncludeBuildOutput>
@@ -17,16 +17,11 @@
 
     <ItemGroup>
         <PackageReference Include="Humanizer" Version="2.14.1" />
-        <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4">
+        <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.3.0" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <AdditionalFiles Remove="AnalyzerReleases.Shipped.md" />
-      <AdditionalFiles Remove="AnalyzerReleases.Unshipped.md" />
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.6.0" />
     </ItemGroup>
 
 </Project>

@@ -15,10 +15,10 @@ public static class DecoratorTemplate
     public const string Argument_2 = "##Args_2##";
 }
 
-public abstract class DecoratorBaseAttribute(string template) : Attribute;
+public abstract class DecorateBaseAttribute(string template) : Attribute;
 
 public sealed class DecorateWithTryCatchAttribute() :
-    DecoratorBaseAttribute(template: $$"""
+    DecorateBaseAttribute(template: $$"""
                   public {{DecoratorTemplate.ReturnType}} {{DecoratorTemplate.MethodName}}WithTryCatch({{DecoratorTemplate.ParameterListWithType}})
                   {
                       try

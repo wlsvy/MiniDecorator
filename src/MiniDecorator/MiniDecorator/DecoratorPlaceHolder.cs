@@ -65,6 +65,6 @@ public partial class Sample
     [DecorateWith(Sample.Template)]
     private void DoSomething()
     {
-        Console.WriteLine($"Do Something");
+        //Console.WriteLine($"Do Something");
     }
 }

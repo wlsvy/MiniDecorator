@@ -1,20 +1,20 @@
-﻿using Microsoft.CodeAnalysis;
+﻿#nullable enable
+using System;
+using System.Collections.Generic;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
-using System;
-using System.Collections.Concurrent;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Humanizer;
-using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Text;
+using System.Diagnostics;
+using System.Linq;
+using Humanizer;
 
 namespace MiniDecorator;
 
 public abstract class DecoratorBaseAttribute(string template) : Attribute;
 
-[Generator]
+[Generator(LanguageNames.CSharp)]
 public class DecoratorSourceGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
@@ -22,8 +22,8 @@ public class DecoratorSourceGenerator : IIncrementalGenerator
         // Step 1: Find all classes that inherit from DecorateBaseAttribute
         var decoratorAttributeTypes = context.SyntaxProvider
             .CreateSyntaxProvider(
-                predicate: static (s, _) => IsAttributeClass(s),
-                transform: static (ctx, _) => GetSemanticTargetForDecoratorAttribute(ctx))
+                predicate: static (s, _) => IsDecoratorAttributeWithPrimaryConstructor(s),
+                transform: static (ctx, _) => GetDecoratorTemplate(ctx))
             .Where(static m => m != null)
             .Collect();
 
@@ -41,6 +41,111 @@ public class DecoratorSourceGenerator : IIncrementalGenerator
             (spc, source) => Execute(source.Left, source.Right, spc));
     }
 
+    private static bool IsDecoratorAttributeWithPrimaryConstructor(SyntaxNode node)
+    {
+        if (node is not ClassDeclarationSyntax { BaseList: not null })
+        {
+            return false;
+        }
+
+        SeparatedSyntaxList<BaseTypeSyntax> baseListTypes = ((ClassDeclarationSyntax)node).BaseList!.Types;
+        BaseTypeSyntax? decoratorBaseAttributeClass = baseListTypes.SingleOrDefault(t => t.Type.ToString() == nameof(DecorateBaseAttribute));
+        return decoratorBaseAttributeClass is PrimaryConstructorBaseTypeSyntax;
+    }
+    
+    private static INamedTypeSymbol GetDecoratorTemplate(GeneratorSyntaxContext context)
+    {
+        ClassDeclarationSyntax attributeClassDeclaration = (ClassDeclarationSyntax)context.Node;
+        string attributeClassName = attributeClassDeclaration.Identifier.ToString();
+        
+        BaseTypeSyntax decoratorBaseAttributeClass = attributeClassDeclaration.BaseList!.Types.Single(t => t.Type.ToString() == nameof(DecorateBaseAttribute));
+        PrimaryConstructorBaseTypeSyntax primaryConstructorBaseTypeSyntax = (PrimaryConstructorBaseTypeSyntax)decoratorBaseAttributeClass;
+        InterpolatedStringExpressionSyntax templateExpression = (InterpolatedStringExpressionSyntax)primaryConstructorBaseTypeSyntax.ArgumentList.Arguments[0].Expression;
+        
+        StringBuilder parsedTemplate = new ();
+        foreach (InterpolatedStringContentSyntax content in templateExpression.Contents)
+        {
+            if (content is InterpolatedStringTextSyntax text)
+            {
+                // InterpolatedStringText는 그대로 사용
+                parsedTemplate.Append(text.TextToken.ValueText);
+            }
+            else if (content is InterpolationSyntax interpolation)
+            {
+                // Interpolation 구간은 치환
+                parsedTemplate.Append($"##{interpolation.Expression}##");
+            }
+        }
+
+        throw new Exception($"""
+                             Complete?? : {attributeClassName} 
+                             {parsedTemplate}
+                             ---
+                             {templateExpression.Contents.ToString()}
+                             """);
+        
+        // Look for classes that inherit from DecorateBaseAttribute
+        foreach (BaseTypeSyntax baseType in attributeClassDeclaration.BaseList!.Types)
+        {
+            if (baseType.Type.ToString() == nameof(DecorateBaseAttribute))
+            {
+                throw new Exception($"Find deco {attributeClassDeclaration.Identifier.ToString()}");
+            }
+            INamedTypeSymbol? typeSymbol = context.SemanticModel.GetTypeInfo(baseType.Type).Type as INamedTypeSymbol;
+            if (typeSymbol == null)
+            {
+                throw new ArgumentException("Test");
+            }
+
+            if (typeSymbol.ToDisplayString() == nameof(DecorateBaseAttribute))
+            {
+                return context.SemanticModel.GetDeclaredSymbol(attributeClassDeclaration) as INamedTypeSymbol;
+            }
+            else
+            {
+                // throw new Exception(
+                //     $"{nameof(GetSemanticTargetForDecoratorAttribute)} {typeSymbol.ToDisplayString()} is not deco {classDeclaration.Identifier.ToString()}");
+            }
+        }
+
+        //throw new Exception( $"{nameof(GetSemanticTargetForDecoratorAttribute)} deco attr not found {classDeclaration.Identifier.ToString()}");
+        return null;
+    }
+
+    // Helper method to check if the syntax node is a method with at least one attribute
+    private static bool IsMethodWithAttribute(SyntaxNode node)
+    {
+        return node is MethodDeclarationSyntax mds && mds.AttributeLists.Count > 0;
+    }
+
+    // Transform method to get the method symbol and its decorator attribute symbol
+    private static (IMethodSymbol MethodSymbol, INamedTypeSymbol AttributeSymbol) GetMethodWithDecorator(GeneratorSyntaxContext context)
+    {
+        var methodDeclaration = (MethodDeclarationSyntax)context.Node;
+        var methodSymbol = context.SemanticModel.GetDeclaredSymbol(methodDeclaration) as IMethodSymbol;
+
+        if (methodSymbol == null)
+            return (null, null);
+
+        foreach (var attributeData in methodSymbol.GetAttributes())
+        {
+            var attrClass = attributeData.AttributeClass;
+            if (attrClass == null)
+                continue;
+
+            // Check if the attribute inherits from DecorateBaseAttribute
+            var baseType = attrClass.BaseType;
+            while (baseType != null)
+            {
+                if (baseType.Name == "DecorateBaseAttribute")
+                    return (methodSymbol, attrClass);
+                baseType = baseType.BaseType;
+            }
+        }
+
+        return (null, null);
+    }
+    
     private void Execute(
         ImmutableArray<INamedTypeSymbol> decoratorAttributes,
         ImmutableArray<(IMethodSymbol MethodSymbol, INamedTypeSymbol AttributeSymbol)> methods,
@@ -48,12 +153,12 @@ public class DecoratorSourceGenerator : IIncrementalGenerator
     {
         if (decoratorAttributes.IsDefaultOrEmpty)
         {
-            return;
+            throw new Exception("Attr is Empty");
         }
 
         if (methods.IsDefaultOrEmpty)
         {
-            return;
+            throw new Exception("method is Empty");
         }
 
         // Map decorator attribute names to their template strings
@@ -106,154 +211,12 @@ public class DecoratorSourceGenerator : IIncrementalGenerator
 
         sb.AppendLine("}"); // End of namespace
 
+        throw new Exception($"""
+                             rr
+                             {sb}
+                              
+                             """);
         // Add the generated source
         context.AddSource("GeneratedDecorators.g.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
-    }
-
-    // Helper method to check if the syntax node is a class that could be an attribute
-    private static bool IsAttributeClass(SyntaxNode node)
-    {
-        return node is ClassDeclarationSyntax cds && cds.BaseList != null;
-    }
-
-    // Transform method to get the decorator attribute type symbol
-    private static INamedTypeSymbol GetSemanticTargetForDecoratorAttribute(GeneratorSyntaxContext context)
-    {
-        var classDeclaration = (ClassDeclarationSyntax)context.Node;
-
-        // Look for classes that inherit from DecorateBaseAttribute
-        foreach (BaseTypeSyntax baseType in classDeclaration.BaseList.Types)
-        {
-            INamedTypeSymbol? typeSymbol = context.SemanticModel.GetTypeInfo(baseType.Type).Type as INamedTypeSymbol;
-            if (typeSymbol == null)
-            {
-                continue;
-            }
-
-            if (typeSymbol.ToDisplayString() == nameof(DecorateBaseAttribute))
-            {
-                return context.SemanticModel.GetDeclaredSymbol(classDeclaration) as INamedTypeSymbol;
-            }
-        }
-
-        return null;
-    }
-
-    // Helper method to check if the syntax node is a method with at least one attribute
-    private static bool IsMethodWithAttribute(SyntaxNode node)
-    {
-        return node is MethodDeclarationSyntax mds && mds.AttributeLists.Count > 0;
-    }
-
-    // Transform method to get the method symbol and its decorator attribute symbol
-    private static (IMethodSymbol MethodSymbol, INamedTypeSymbol AttributeSymbol) GetMethodWithDecorator(GeneratorSyntaxContext context)
-    {
-        var methodDeclaration = (MethodDeclarationSyntax)context.Node;
-        var methodSymbol = context.SemanticModel.GetDeclaredSymbol(methodDeclaration) as IMethodSymbol;
-
-        if (methodSymbol == null)
-            return (null, null);
-
-        foreach (var attributeData in methodSymbol.GetAttributes())
-        {
-            var attrClass = attributeData.AttributeClass;
-            if (attrClass == null)
-                continue;
-
-            // Check if the attribute inherits from DecorateBaseAttribute
-            var baseType = attrClass.BaseType;
-            while (baseType != null)
-            {
-                if (baseType.Name == "DecorateBaseAttribute")
-                    return (methodSymbol, attrClass);
-                baseType = baseType.BaseType;
-            }
-        }
-
-        return (null, null);
-    }
-}
-
-[Generator]
-public class AutoNotifyGenerator : ISourceGenerator
-{
-    public void Initialize(GeneratorInitializationContext context)
-    {
-        // 초기화 단계에서는 별도 작업이 필요하지 않습니다.
-    }
-
-    public void Execute(GeneratorExecutionContext context)
-    {
-        // 모든 SyntaxTree를 가져옵니다.
-        SyntaxTree[] syntaxTrees = context.Compilation.SyntaxTrees.ToArray();
-
-        // 병렬 처리 결과를 저장할 ConcurrentBag
-        ConcurrentBag<(string fileName, string code)> generatedCodes = new();
-
-        // 병렬 처리로 각 SyntaxTree를 분석
-        Parallel.ForEach(syntaxTrees, syntaxTree =>
-        {
-            SyntaxNode root = syntaxTree.GetRoot();
-            // 클래스 선언을 가져오고 그 안에 모든 멤버를 조회
-            var classDeclarations = root.DescendantNodes()
-                .OfType<ClassDeclarationSyntax>()
-                .SelectMany(classDecl => classDecl.Members
-                    .Select(member => (classDecl, member)));
-
-            foreach (var (classDeclaration, member) in classDeclarations)
-            {
-                if (member is not FieldDeclarationSyntax fieldDeclaration)
-                {
-                    continue;
-                }
-                
-                foreach (VariableDeclaratorSyntax variable in fieldDeclaration.Declaration.Variables)
-                {
-                    // 필드에 [AutoNotify] 속성이 있는지 확인
-                    if (fieldDeclaration.AttributeLists.Any(attrList => attrList.Attributes.Any(attr => attr.ToString().Contains("AutoNotify"))))
-                    {
-                        // 클래스 및 필드 이름 추출
-                        string className = classDeclaration.Identifier.Text;
-                        string fieldName = variable.Identifier.Text;
-                        string propertyName = fieldName.Pascalize();
-
-                        string generatedCode = $$"""
-                                         namespace {{context.Compilation.AssemblyName}}
-                                         {
-                                             public partial class {{className}}
-                                             {
-                                                 public {{fieldDeclaration.Declaration.Type}} {{propertyName}}
-                                                 {
-                                                     get => {{fieldName}};
-                                                     set
-                                                     {
-                                                         if (!Equals({{fieldName}}, value))
-                                                         {
-                                                             {{fieldName}} = value;
-                                                             OnPropertyChanged(nameof({{propertyName}}));
-                                                         }
-                                                     }
-                                                 }
-                                         
-                                                 private void OnPropertyChanged(string propertyName)
-                                                 {
-                                                     // PropertyChanged 이벤트를 호출하는 코드가 여기에 위치할 수 있습니다.
-                                                 }
-                                             }
-                                         }
-                                         """;
-
-                        // 결과를 ConcurrentBag에 저장
-                        generatedCodes.Add(($"{className}_{fieldName}_AutoNotify.cs", generatedCode));
-                    }
-                }
-            }
-        });
-
-        // 병렬 처리 후 context에 코드 추가
-        foreach (var (fileName, code) in generatedCodes)
-        {
-            context.AddSource(fileName, SourceText.From(code, Encoding.UTF8));
-        }
     }
 }

@@ -4,7 +4,7 @@ using Xunit;
 
 namespace MiniDecorator.Tests;
 
-[AttributeUsage(AttributeTargets.Field | AttributeTargets.Method)]
+[AttributeUsage(AttributeTargets.Field | AttributeTargets.Method | AttributeTargets.Property)]
 public sealed class AutoNotifyAttribute : Attribute;
 
 public sealed class TestSample
@@ -13,7 +13,8 @@ public sealed class TestSample
     public void Test1()
     {
         Sample t = new Sample();
-        Assert.Equal("Foo", t.Foo.Pascalize());
+        
+        Assert.Equal(t.coo.Pascalize(), t.Generated_coo.Pascalize());
     }
     
 }
@@ -22,4 +23,7 @@ public partial class Sample
 {
     [AutoNotify]
     public string foo = "foo";
+    
+    [AutoNotify]
+    public string coo { get; set; } = "abe";
 }
