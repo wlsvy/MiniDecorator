@@ -1,5 +1,4 @@
 using System.Linq;
-using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -13,7 +12,7 @@ public sealed class ParserTest
    public void Parse()
    {
       string code = @"
-public sealed class TestDecoratorAttribute : DecorateBaseAttribute(template: $$""""""
+public sealed class TestDecoratorAttribute : [DECO](template: $$""""""
   public {{DecoratorTemplate.ReturnType}}{{DecoratorTemplate.MethodName}}WithTryCatch({{DecoratorTemplate.ParameterListWithType}})
   {
       try
@@ -28,15 +27,16 @@ public sealed class TestDecoratorAttribute : DecorateBaseAttribute(template: $$"
       }
   }
   """""";
-";
+".Replace("[DECO]", nameof(DecorateBaseAttribute));
+      
       SyntaxTree tree = CSharpSyntaxTree.ParseText(code)!;
       SyntaxNode root = tree.GetRoot()!;
       ClassDeclarationSyntax classDeclarationSyntax = root.DescendantNodes()
           .OfType<ClassDeclarationSyntax>()
           .Single();
       
-      Assert.True(MiniDecorator.DecoratorSourceGenerator.TryGetDecoratorAttribute(classDeclarationSyntax, out PrimaryConstructorBaseTypeSyntax? decoratorConstructor));
-      string parsedTemplate = MiniDecorator.DecoratorSourceGenerator.ParseTemplate(decoratorConstructor!);
+      Assert.True(DecoratorSourceGenerator.TryGetDecoratorAttribute(classDeclarationSyntax, out PrimaryConstructorBaseTypeSyntax? decoratorConstructor));
+      string parsedTemplate = DecoratorSourceGenerator.ParseTemplate(decoratorConstructor!);
 
    }
 }
