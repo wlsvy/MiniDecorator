@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyIncrementalSourceGenerator", "MyIncrementalSourceGenerator\MyIncrementalSourceGenerator.csproj", "{88084C8D-3CBA-44D8-B08E-D87101D58026}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleApp", "SampleApp\SampleApp.csproj", "{C8399EBA-5287-429E-808B-3D3B07A19939}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{88084C8D-3CBA-44D8-B08E-D87101D58026}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{88084C8D-3CBA-44D8-B08E-D87101D58026}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{88084C8D-3CBA-44D8-B08E-D87101D58026}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{88084C8D-3CBA-44D8-B08E-D87101D58026}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C8399EBA-5287-429E-808B-3D3B07A19939}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C8399EBA-5287-429E-808B-3D3B07A19939}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C8399EBA-5287-429E-808B-3D3B07A19939}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C8399EBA-5287-429E-808B-3D3B07A19939}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
