@@ -9,6 +9,7 @@ using System.Text;
 using System.Diagnostics;
 using System.Linq;
 using Humanizer;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace MiniDecorator;
 
@@ -261,4 +262,110 @@ public class DecoratorSourceGenerator : IIncrementalGenerator
         // Add the generated source
         context.AddSource("GeneratedDecorators.g.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
     }
+}
+
+
+public record struct TypeOfExpr(
+    string TypeName,
+    string[] ElementTypeNames,
+    SyntaxKind SyntaxType);
+
+
+public static class Util
+{
+    /// <summary>
+    /// 애트리뷰트 타입 이름에 대해서는 'Attribute' 접미사를 붙인 버전과 뗀 버전에 대해서 각각 비교할 것
+    /// </summary>
+    /// <param name="attributeSyntax"> 분석한 코드의 Attribute syntax. 이때 'Attribute' 접미사를 떼고 지정했을 수 있다.</param>
+    /// <param name="attributeTypeName">비교 대상 AttributeName</param>
+    private static bool IsAttributeNameEqual(this AttributeSyntax attributeSyntax, ReadOnlySpan<char> attributeTypeName)
+    {
+        var declaredName = attributeSyntax.Name.ToString().AsSpan();
+        if (declaredName.EndsWith("Attribute".AsSpan()) &&
+            declaredName.SequenceEqual(attributeTypeName))
+        {
+            return true;
+        }
+
+        if (declaredName.SequenceEqual(attributeTypeName[..^"Attribute".Length]))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    private static string GetNameOfExpressionOrThrow(this AttributeArgumentSyntax attributeArgumentSyntax, string filePath)
+    {
+        if (attributeArgumentSyntax.Expression is InvocationExpressionSyntax invocation &&
+            invocation.Expression is IdentifierNameSyntax identifier &&
+            identifier.Identifier.ValueText == "nameof" &&          //nameof 연산자를 반드시 적용해야 함
+            invocation.ArgumentList.Arguments.Count == 1)
+        {
+            return invocation.ArgumentList.Arguments[0].Expression.GetText().ToString();
+        }
+
+        throw new NotSupportedException($$"""
+                                             배열 형식을 허용하지 않고, Namespace 이름을 작성할 때 반드시 nameof(...) 안에 작성해주세요.
+                                             
+                                              file: [{{filePath}}]
+                                              argumentText: [{{attributeArgumentSyntax.ToFullString()}}]
+                                          """);
+    }
+
+    private static TypeOfExpr GetTypeOfExpressionOrThrow(this AttributeArgumentSyntax attributeArgumentSyntax, string filePath)
+    {
+        if (attributeArgumentSyntax.Expression is TypeOfExpressionSyntax typeOfExpr)
+        {
+            string typeName = typeOfExpr.Type.GetText().ToString();
+
+            switch (typeOfExpr.Type)
+            {
+                case PredefinedTypeSyntax:
+                    return new(
+                        TypeName: typeName,
+                        ElementTypeNames: [],
+                        SyntaxType: SyntaxKind.PredefinedType);
+
+                case IdentifierNameSyntax:
+                    return new(
+                        TypeName: typeName,
+                        ElementTypeNames: [],
+                        SyntaxType: SyntaxKind.IdentifierName);
+
+                case NullableTypeSyntax nullable:
+                    return new(
+                        TypeName: typeName,
+                        ElementTypeNames: [nullable.ElementType.GetText().ToString()],
+                        SyntaxType: SyntaxKind.NullableType);
+
+                case GenericNameSyntax generic: //내부 제네릭 파라미터를 볼 때, nested Generic 까지 전부 펼쳐보진 않는다.
+                    return new(
+                        TypeName: typeName,
+                        ElementTypeNames: generic.TypeArgumentList.Arguments.Select(x => x.GetText().ToString()).ToArray(),
+                        SyntaxType: SyntaxKind.GenericName);
+
+                case TupleTypeSyntax tuple:
+                    return new(
+                        TypeName: typeName,
+                        ElementTypeNames: tuple.Elements.Select(x => x.Type.GetText().ToString()).ToArray(),
+                        SyntaxType: SyntaxKind.TupleType);
+
+                case ArrayTypeSyntax array:
+                    return new(
+                        TypeName: typeName,
+                        ElementTypeNames: [array.ElementType.GetText().ToString()],
+                        SyntaxType: SyntaxKind.ArrayType);
+            }
+        }
+
+        throw new NotSupportedException($$"""
+                                          {{nameof(GetTypeOfExpressionOrThrow)}}: 지원하지 않는 표현식입니다. 
+                                             
+                                              file: [{{filePath}}]
+                                              argumentText: [{{attributeArgumentSyntax.ToFullString()}}]
+                                          """);
+    }
+
+
 }

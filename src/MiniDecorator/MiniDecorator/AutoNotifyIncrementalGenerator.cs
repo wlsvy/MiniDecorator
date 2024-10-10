@@ -13,7 +13,9 @@ public sealed class AutoNotifyIncrementalGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        System.Diagnostics.Debugger.Launch();
+        // Can Debug in Visual studio IDE
+        // Not in Rider
+        //System.Diagnostics.Debugger.Launch();
         
         // 단계 1: [AutoNotify] 속성을 가진 필드 선언을 찾습니다.
         var fieldDeclarations = context.SyntaxProvider
