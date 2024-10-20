@@ -117,7 +117,7 @@ public class DecoratorSourceGenerator : IIncrementalGenerator
         string className = classDeclarationSyntax.Identifier.Text;
     }
 
-    public static string GetMemberTT(ClassDeclarationSyntax classDeclarationSyntax, MemberDeclarationSyntax memberDeclarationSyntax, string template)
+    public static string GenerateCodeFromTemplate(ClassDeclarationSyntax classDeclarationSyntax, MemberDeclarationSyntax memberDeclarationSyntax, string template)
     {
         string className = classDeclarationSyntax.Identifier.Text;
         string memberName = memberDeclarationSyntax switch

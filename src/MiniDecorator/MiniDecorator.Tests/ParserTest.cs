@@ -98,7 +98,7 @@ public sealed class TestDecoratorAttribute : [DECO](template: $$""""""
           .OfType<MethodDeclarationSyntax>()
           .Single();
       
-      string generatedMethodCode = DecoratorSourceGenerator.GetMemberTT(classDeclarationSyntax, methodDeclarationSyntax, decoratorTemplate);
+      string generatedMethodCode = DecoratorSourceGenerator.GenerateCodeFromTemplate(classDeclarationSyntax, methodDeclarationSyntax, decoratorTemplate);
       Assert.Equal(expectedGeneratedMethod, generatedMethodCode);
    }
 }
