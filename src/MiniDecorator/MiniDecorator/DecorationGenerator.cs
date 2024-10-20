@@ -6,9 +6,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using System.Collections.Immutable;
 using System.Text;
-using System.Diagnostics;
 using System.Linq;
-using Humanizer;
 using Microsoft.CodeAnalysis.CSharp;
 
 namespace MiniDecorator;
@@ -50,107 +48,19 @@ public class DecoratorSourceGenerator : IIncrementalGenerator
         return decoratorBaseAttributeClass is PrimaryConstructorBaseTypeSyntax;
     }
 
-    public static bool TryGetDecoratorAttribute(ClassDeclarationSyntax classDeclarationSyntax, out PrimaryConstructorBaseTypeSyntax? decoratorConstructor)
-    {
-        if (classDeclarationSyntax.BaseList is null)
-        {
-            decoratorConstructor = null;
-            return false;
-        }
-        
-        SeparatedSyntaxList<BaseTypeSyntax> baseListTypes = classDeclarationSyntax.BaseList!.Types;
-        BaseTypeSyntax? decoratorBaseAttributeClass = baseListTypes.SingleOrDefault(t => t.Type.ToString() == nameof(DecorateBaseAttribute));
-        PrimaryConstructorBaseTypeSyntax? primaryConstructorBaseTypeSyntax = decoratorBaseAttributeClass as PrimaryConstructorBaseTypeSyntax;
-        if (primaryConstructorBaseTypeSyntax is null)
-        {
-            decoratorConstructor = null;
-            return false;
-        }
-
-        decoratorConstructor = primaryConstructorBaseTypeSyntax;
-        return true;
-    }
-
-    public static string ParseTemplate(PrimaryConstructorBaseTypeSyntax decoratorDeclaration)
-    {
-        InterpolatedStringExpressionSyntax templateExpression = (InterpolatedStringExpressionSyntax)decoratorDeclaration.ArgumentList.Arguments[0].Expression;
-        StringBuilder parsedTemplate = new ();
-        foreach (InterpolatedStringContentSyntax content in templateExpression.Contents)
-        {
-            if (content is InterpolatedStringTextSyntax text)
-            {
-                // InterpolatedStringText는 그대로 사용
-                parsedTemplate.Append(text.TextToken.ValueText);
-            }
-            else if (content is InterpolationSyntax interpolation)
-            {
-                // Interpolation 구간은 치환
-                ExpressionSyntax expression = interpolation.Expression;
-                MemberAccessExpressionSyntax memberAccessExpressionSyntax = (MemberAccessExpressionSyntax)expression; 
-                SimpleNameSyntax name = memberAccessExpressionSyntax.Name;
-                parsedTemplate.Append($"##{name.Identifier}##");
-            }
-        }
-
-        return parsedTemplate.ToString();
-    } 
-    
     private static (string Name, string Template) GetDecoratorTemplate(GeneratorSyntaxContext context)
     {
         ClassDeclarationSyntax attributeClassDeclaration = (ClassDeclarationSyntax)context.Node;
         string className = attributeClassDeclaration.Identifier.ToString();
         BaseTypeSyntax decoratorBaseAttributeClass = attributeClassDeclaration.BaseList!.Types.Single(t => t.Type.ToString() == nameof(DecorateBaseAttribute));
         PrimaryConstructorBaseTypeSyntax primaryConstructorBaseTypeSyntax = (PrimaryConstructorBaseTypeSyntax)decoratorBaseAttributeClass;
-        return (className, ParseTemplate(primaryConstructorBaseTypeSyntax));
+        return (className, DecoratorSourceGeneratorCore.ParseTemplate(primaryConstructorBaseTypeSyntax));
     }
 
     // Helper method to check if the syntax node is a method with at least one attribute
     private static bool IsMethodWithAttribute(SyntaxNode node)
     {
         return node is MethodDeclarationSyntax mds && mds.AttributeLists.Count > 0;
-    }
-
-    public static void GetMethodWithAttr(ClassDeclarationSyntax classDeclarationSyntax)
-    {
-        MemberDeclarationSyntax[] memberDeclarationSyntaxes = classDeclarationSyntax.DescendantNodes().OfType<MemberDeclarationSyntax>().ToArray();
-        
-        string className = classDeclarationSyntax.Identifier.Text;
-    }
-
-    public static string GenerateCodeFromTemplate(ClassDeclarationSyntax classDeclarationSyntax, MemberDeclarationSyntax memberDeclarationSyntax, string template)
-    {
-        string className = classDeclarationSyntax.Identifier.Text;
-        string memberName = memberDeclarationSyntax switch
-        {
-            MethodDeclarationSyntax method => method.Identifier.ToString(),
-            PropertyDeclarationSyntax property => property.Identifier.ToString(),
-            _ => throw new NotSupportedException(),
-        };
-        string typeName = memberDeclarationSyntax switch
-        {
-            MethodDeclarationSyntax method => method.ReturnType.ToString(),
-            PropertyDeclarationSyntax property => property.Type.ToString(),
-            _ => throw new NotSupportedException(),
-        };
-        string parameterListWithType = memberDeclarationSyntax switch
-        {
-            MethodDeclarationSyntax method => method.ParameterList.Parameters.ToString(),
-            PropertyDeclarationSyntax property => string.Empty,
-            _ => throw new NotSupportedException(),
-        };
-        string parameterList = memberDeclarationSyntax switch
-        {
-            MethodDeclarationSyntax method => string.Join(", ", method.ParameterList.Parameters.Select(p => p.Identifier.ToString())),
-            PropertyDeclarationSyntax property => string.Empty,
-            _ => throw new NotSupportedException(),
-        };
-
-        return new StringBuilder(template)
-            .Replace(DecoratorTemplate.MethodName, memberName)
-            .Replace(DecoratorTemplate.ReturnType, typeName)
-            .Replace(DecoratorTemplate.ParameterListWithType, parameterListWithType)
-            .Replace(DecoratorTemplate.ParameterList, parameterList)
-            .ToString();
     }
 
     private static (IMethodSymbol MethodSymbol, INamedTypeSymbol AttributeSymbol) GetMethodWithDecorator(GeneratorSyntaxContext context)

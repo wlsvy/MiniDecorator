@@ -67,8 +67,8 @@ public sealed class TestDecoratorAttribute : [DECO](template: $$""""""
           .OfType<ClassDeclarationSyntax>()
           .Single();
       
-      Assert.True(DecoratorSourceGenerator.TryGetDecoratorAttribute(classDeclarationSyntax, out PrimaryConstructorBaseTypeSyntax? decoratorConstructor));
-      string parsedTemplate = DecoratorSourceGenerator.ParseTemplate(decoratorConstructor!);
+      Assert.True(DecoratorSourceGeneratorCore.TryGetDecoratorAttribute(classDeclarationSyntax, out PrimaryConstructorBaseTypeSyntax? decoratorConstructor));
+      string parsedTemplate = DecoratorSourceGeneratorCore.ParseTemplate(decoratorConstructor!);
       Assert.Equal(decoratorTemplate, parsedTemplate);
    }
 
@@ -98,7 +98,7 @@ public sealed class TestDecoratorAttribute : [DECO](template: $$""""""
           .OfType<MethodDeclarationSyntax>()
           .Single();
       
-      string generatedMethodCode = DecoratorSourceGenerator.GenerateCodeFromTemplate(classDeclarationSyntax, methodDeclarationSyntax, decoratorTemplate);
+      string generatedMethodCode = DecoratorSourceGeneratorCore.GenerateCodeFromTemplate(classDeclarationSyntax, methodDeclarationSyntax, decoratorTemplate);
       Assert.Equal(expectedGeneratedMethod, generatedMethodCode);
    }
 }
