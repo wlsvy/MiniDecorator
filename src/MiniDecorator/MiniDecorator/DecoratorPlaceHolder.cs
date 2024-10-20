@@ -7,11 +7,11 @@ namespace MiniDecorator;
 
 public static class DecoratorTemplate
 {
-    public const string MethodName = "##MethodOrClassName##";
-    public const string ClassName = "##MethodOrClassName##";
+    public const string MethodName = "##MethodName##";
+    public const string ClassName = "##ClassName##";
     public const string ReturnType = "##ReturnType##";
-    public const string ParameterListWithType = "##ParameterListWithType##";
     public const string ParameterList = "##ParameterList##";
+    public const string ParameterListWithType = "##ParameterListWithType##";
     public const string ParameterList_Skip1 = "##ParameterList_Skip1##";
     public const string Argument_1 = "##Args_11##";
     public const string Argument_2 = "##Args_2##";
