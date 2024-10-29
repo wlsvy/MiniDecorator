@@ -15,17 +15,16 @@ internal record struct DecoratorTemplateIngredient(
     string DecoratorAttributeClassName,
     string Template);
 
-internal record struct DecoratorTargetIngredient(
-    BaseNamespaceDeclarationSyntax NamespaceSyntax,
+internal record struct DecoratorSourceIngredient(
+    BaseNamespaceDeclarationSyntax Namespace,
     TypeDeclarationSyntax TypeDeclaration,
     MemberDeclarationSyntax MemberDeclaration,
-    SyntaxList<UsingDirectiveSyntax> UsingDirectiveSyntaxes,
+    SyntaxList<UsingDirectiveSyntax> UsingDirectiveSyntaxList,
     string DecoratorAttributeClassName);
 
 [Generator(LanguageNames.CSharp)]
 public class DecoratorSourceGenerator : IIncrementalGenerator
 {
-
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var decoratorAttributeTypes = context.SyntaxProvider
@@ -37,7 +36,7 @@ public class DecoratorSourceGenerator : IIncrementalGenerator
         var methodsWithDecorator = context.SyntaxProvider
             .CreateSyntaxProvider(
                 predicate: static (s, _) => IsMethodOrPropertyWithAttribute(s),
-                transform: static (ctx, _) => GetMethodWithDecorator(ctx))
+                transform: static (ctx, _) => GetDecorationRequestedSource(ctx))
             .Where(static m => m != null)
             .Select(static (nullable, _) => nullable!.Value)
             .Collect();
@@ -49,14 +48,7 @@ public class DecoratorSourceGenerator : IIncrementalGenerator
 
     private static bool IsDecoratorAttributeWithPrimaryConstructor(SyntaxNode node)
     {
-        if (node is not ClassDeclarationSyntax { BaseList: not null })
-        {
-            return false;
-        }
-
-        SeparatedSyntaxList<BaseTypeSyntax> baseListTypes = ((ClassDeclarationSyntax)node).BaseList!.Types;
-        BaseTypeSyntax? decoratorBaseAttributeClass = baseListTypes.SingleOrDefault(t => t.Type.ToString() == nameof(DecorateBaseAttribute));
-        return decoratorBaseAttributeClass is PrimaryConstructorBaseTypeSyntax;
+        return DecoratorSourceGeneratorCore.TryGetDecoratorAttribute(node, out _);
     }
 
     private static DecoratorTemplateIngredient GetDecoratorTemplate(GeneratorSyntaxContext context)
@@ -78,7 +70,7 @@ public class DecoratorSourceGenerator : IIncrementalGenerator
         return result;
     }
 
-    private static DecoratorTargetIngredient? GetMethodWithDecorator(GeneratorSyntaxContext context)
+    private static DecoratorSourceIngredient? GetDecorationRequestedSource(GeneratorSyntaxContext context)
     {
         MemberDeclarationSyntax memberDeclaration = (MemberDeclarationSyntax)context.Node;
         ISymbol memberSymbol = context.SemanticModel.GetDeclaredSymbol(memberDeclaration)!;
@@ -92,10 +84,10 @@ public class DecoratorSourceGenerator : IIncrementalGenerator
             {
                 BaseNamespaceDeclarationSyntax namespaceSyntax = Util.GetNamespace(memberDeclaration);
                 TypeDeclarationSyntax typeDeclaration = Util.GetParentTypeOfMember(memberDeclaration);
-                SyntaxList<UsingDirectiveSyntax> usingDirectiveSyntaxes = memberDeclaration.SyntaxTree.GetCompilationUnitRoot().Usings;
+                SyntaxList<UsingDirectiveSyntax> usingDirectiveSyntaxList = memberDeclaration.SyntaxTree.GetCompilationUnitRoot().Usings;
                 string decoratorAttributeClassName = attrBaseType!.Name;
 
-                return new DecoratorTargetIngredient(namespaceSyntax, typeDeclaration, memberDeclaration, usingDirectiveSyntaxes, decoratorAttributeClassName);
+                return new DecoratorSourceIngredient(namespaceSyntax, typeDeclaration, memberDeclaration, usingDirectiveSyntaxList, decoratorAttributeClassName);
             }
         }
 
@@ -104,47 +96,51 @@ public class DecoratorSourceGenerator : IIncrementalGenerator
 
     private void Execute(
         ImmutableArray<DecoratorTemplateIngredient> templates,
-        ImmutableArray<DecoratorTargetIngredient> targets,
+        ImmutableArray<DecoratorSourceIngredient> sources,
         SourceProductionContext context)
     {
-        if (templates.IsDefaultOrEmpty)
+        Dictionary<string, DecoratorTemplateIngredient> templateDic = templates.ToDictionary(
+            keySelector: x => x.DecoratorAttributeClassName,
+            elementSelector: x => x);
+
+        var sourcesByType = sources
+            .Where(s => templateDic.ContainsKey(s.DecoratorAttributeClassName))
+            .GroupBy(s => $"{s.Namespace.Name}_{s.TypeDeclaration.Identifier}");
+
+        foreach (var sourcesInSingleType in sourcesByType)
         {
-            throw new Exception("Attr is Empty");
-        }
-
-        if (targets.IsDefaultOrEmpty)
-        {
-            throw new Exception("method is Empty");
-        }
-
-        // Map decorator attribute names to their template strings
-        Dictionary<string, DecoratorTemplateIngredient> decoratorTemplates = new();
-
-        // StringBuilder to accumulate the generated methods
-        var sb = new StringBuilder();
-        sb.AppendLine("// <auto-generated />");
-        sb.AppendLine("using System;");
-        sb.AppendLine();
-        sb.AppendLine("namespace GeneratedDecorators");
-        sb.AppendLine("{");
-
-        foreach (var target in targets)
-        {
-            if (!decoratorTemplates.TryGetValue(target.DecoratorAttributeClassName, out var template))
+            List<string> generatedCodeInSingleType = [];
+            DecoratorSourceIngredient? firstSource = null;
+            foreach (DecoratorSourceIngredient source in sourcesInSingleType)
             {
-                //TODO : error
-                continue;
+                firstSource ??= source;
+                DecoratorTemplateIngredient template = templateDic[source.DecoratorAttributeClassName];
+                string generatedCode = DecoratorSourceGeneratorCore.GenerateCodeFromTemplate(source.MemberDeclaration, template.Template);
+                generatedCodeInSingleType.Add(generatedCode);
             }
 
-            string generatedMethod = DecoratorSourceGeneratorCore.GenerateCodeFromTemplate(target.MemberDeclaration, template.Template);
-            sb.AppendLine(generatedMethod);
-            sb.AppendLine();
+            NameSyntax namespaceDeclaration = firstSource!.Value.Namespace.Name;
+            TypeDeclarationSyntax typeDecl = firstSource!.Value.TypeDeclaration;
+            IEnumerable<string> usingDeclarations = firstSource!.Value.UsingDirectiveSyntaxList.Select(x => $"using {x.Name}");
+
+            context.AddSource(
+                hintName: "GeneratedDecorators.g.cs", 
+                sourceText: SourceText.From(
+                    encoding: Encoding.UTF8,
+                    text: $$"""
+                            {{usingDeclarations.JoinLines(tab: 0)}}
+
+                            // <auto-generated />
+
+                            namespace {{namespaceDeclaration}};
+
+                            partial {{typeDecl.Keyword}} {{typeDecl.Identifier}}
+                            {
+                                {{generatedCodeInSingleType.JoinLines(tab: 1)}}
+                            }
+                            """));
+            
         }
-
-        sb.AppendLine("}"); // End of namespace
-
-        // Add the generated source
-        context.AddSource("GeneratedDecorators.g.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
     }
 }
 

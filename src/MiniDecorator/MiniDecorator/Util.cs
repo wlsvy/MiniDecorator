@@ -146,5 +146,11 @@ public static class Util
                                               argumentText: [{{attributeArgumentSyntax.ToFullString()}}]
                                           """);
     }
+
+    public static string JoinLines(this IEnumerable<string> stringEnumerable, int tab)
+    {
+        string separator = '\n' + new string('t', count: tab);
+        return string.Join(separator, stringEnumerable);
+    }
 }
 

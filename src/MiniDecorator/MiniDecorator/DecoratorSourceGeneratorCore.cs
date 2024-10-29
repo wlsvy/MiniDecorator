@@ -9,9 +9,9 @@ namespace MiniDecorator;
 
 public static class DecoratorSourceGeneratorCore
 {
-    public static bool TryGetDecoratorAttribute(ClassDeclarationSyntax classDeclarationSyntax, out PrimaryConstructorBaseTypeSyntax? decoratorConstructor)
+    public static bool TryGetDecoratorAttribute(SyntaxNode syntaxNode, out PrimaryConstructorBaseTypeSyntax? decoratorConstructor)
     {
-        if (classDeclarationSyntax.BaseList is null)
+        if (syntaxNode is not ClassDeclarationSyntax {BaseList : not null} classDeclarationSyntax)
         {
             decoratorConstructor = null;
             return false;
