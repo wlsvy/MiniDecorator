@@ -24,23 +24,7 @@ public sealed class ParserTest
      }
      """;
 
-    private static readonly string expectedGeneratedMethod = $$"""
-      public void DoSomethingWithTryCatch(int a, int b)
-      {
-          try
-          {
-              System.Console.WriteLine($"Before Invoke");
-              return this.DoSomething(a, b);
-          }
-          catch (Exception e)
-          {
-              System.Console.WriteLine($"Error: {e}");
-              return default;
-          }
-      }
-      """;
-    
-   [Fact]
+    [Fact]
    public void Parse()
    {
       string decoratorAttributeCode = @"
@@ -88,8 +72,24 @@ public sealed class TestDecoratorAttribute : [DECO](template: $$""""""
                }
            }
            """;
-      
-      SyntaxTree tree = CSharpSyntaxTree.ParseText(classCode)!;
+
+      string expectedGeneratedMethod = $$"""
+         public void DoSomethingWithTryCatch(int a, int b)
+         {
+             try
+             {
+                 System.Console.WriteLine($"Before Invoke");
+                 return this.DoSomething(a, b);
+             }
+             catch (Exception e)
+             {
+                 System.Console.WriteLine($"Error: {e}");
+                 return default;
+             }
+         }
+         """;
+
+        SyntaxTree tree = CSharpSyntaxTree.ParseText(classCode)!;
       SyntaxNode root = tree.GetRoot()!;
       ClassDeclarationSyntax classDeclarationSyntax = root.DescendantNodes()
           .OfType<ClassDeclarationSyntax>()
