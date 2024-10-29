@@ -25,9 +25,9 @@ public sealed class ParserTest
      """;
 
     [Fact]
-   public void Parse()
-   {
-      string decoratorAttributeCode = @"
+    public void Parse()
+    {
+        string decoratorAttributeCode = @"
 public sealed class TestDecoratorAttribute : [DECO](template: $$""""""
   public {{DecoratorTemplate.ReturnType}} {{DecoratorTemplate.MethodName}}WithTryCatch({{DecoratorTemplate.ParameterListWithType}})
   {
@@ -44,22 +44,22 @@ public sealed class TestDecoratorAttribute : [DECO](template: $$""""""
   }
   """""";
 ".Replace("[DECO]", nameof(DecorateBaseAttribute));
-      
-      SyntaxTree tree = CSharpSyntaxTree.ParseText(decoratorAttributeCode)!;
-      SyntaxNode root = tree.GetRoot()!;
-      ClassDeclarationSyntax classDeclarationSyntax = root.DescendantNodes()
-          .OfType<ClassDeclarationSyntax>()
-          .Single();
-      
-      Assert.True(DecoratorSourceGeneratorCore.TryGetDecoratorAttribute(classDeclarationSyntax, out PrimaryConstructorBaseTypeSyntax? decoratorConstructor));
-      string parsedTemplate = DecoratorSourceGeneratorCore.ParseTemplate(decoratorConstructor!);
-      Assert.Equal(decoratorTemplate, parsedTemplate);
-   }
 
-   [Fact]
-   public void ClassParse()
-   {
-      string classCode = $$"""
+        SyntaxTree tree = CSharpSyntaxTree.ParseText(decoratorAttributeCode)!;
+        SyntaxNode root = tree.GetRoot()!;
+        ClassDeclarationSyntax classDeclarationSyntax = root.DescendantNodes()
+            .OfType<ClassDeclarationSyntax>()
+            .Single();
+
+        Assert.True(DecoratorSourceGeneratorCore.TryGetDecoratorAttribute(classDeclarationSyntax, out PrimaryConstructorBaseTypeSyntax? decoratorConstructor));
+        string parsedTemplate = DecoratorSourceGeneratorCore.ParseTemplate(decoratorConstructor!);
+        Assert.Equal(decoratorTemplate, parsedTemplate);
+    }
+
+    [Fact]
+    public void ClassParse()
+    {
+        string classCode = $$"""
            using System;
 
            namespace Test;
@@ -73,7 +73,7 @@ public sealed class TestDecoratorAttribute : [DECO](template: $$""""""
            }
            """;
 
-      string expectedGeneratedMethod = $$"""
+        string expectedGeneratedMethod = $$"""
          public void DoSomethingWithTryCatch(int a, int b)
          {
              try
@@ -90,15 +90,15 @@ public sealed class TestDecoratorAttribute : [DECO](template: $$""""""
          """;
 
         SyntaxTree tree = CSharpSyntaxTree.ParseText(classCode)!;
-      SyntaxNode root = tree.GetRoot()!;
-      ClassDeclarationSyntax classDeclarationSyntax = root.DescendantNodes()
-          .OfType<ClassDeclarationSyntax>()
-          .Single();
-      MethodDeclarationSyntax methodDeclarationSyntax = classDeclarationSyntax.DescendantNodes()
-          .OfType<MethodDeclarationSyntax>()
-          .Single();
-      
-      string generatedMethodCode = DecoratorSourceGeneratorCore.GenerateCodeFromTemplate(classDeclarationSyntax, methodDeclarationSyntax, decoratorTemplate);
-      Assert.Equal(expectedGeneratedMethod, generatedMethodCode);
-   }
+        SyntaxNode root = tree.GetRoot()!;
+        ClassDeclarationSyntax classDeclarationSyntax = root.DescendantNodes()
+            .OfType<ClassDeclarationSyntax>()
+            .Single();
+        MethodDeclarationSyntax methodDeclarationSyntax = classDeclarationSyntax.DescendantNodes()
+            .OfType<MethodDeclarationSyntax>()
+            .Single();
+
+        string generatedMethodCode = DecoratorSourceGeneratorCore.GenerateCodeFromTemplate(classDeclarationSyntax, methodDeclarationSyntax, decoratorTemplate);
+        Assert.Equal(expectedGeneratedMethod, generatedMethodCode);
+    }
 }
