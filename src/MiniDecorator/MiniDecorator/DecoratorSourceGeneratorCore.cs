@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Linq;
 using System.Text;
@@ -53,9 +54,8 @@ public static class DecoratorSourceGeneratorCore
         return parsedTemplate.ToString();
     } 
 
-    public static string GenerateCodeFromTemplate(ClassDeclarationSyntax classDeclarationSyntax, MemberDeclarationSyntax memberDeclarationSyntax, string template)
+    public static string GenerateCodeFromTemplate(MemberDeclarationSyntax memberDeclarationSyntax, string template)
     {
-        string className = classDeclarationSyntax.Identifier.Text;
         string memberName = memberDeclarationSyntax switch
         {
             MethodDeclarationSyntax method => method.Identifier.ToString(),
