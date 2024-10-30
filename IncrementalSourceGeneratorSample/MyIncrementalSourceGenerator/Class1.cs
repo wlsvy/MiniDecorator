@@ -9,6 +9,9 @@ public class HelloWorldGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
+        // Source Generator 디버깅을 위해 아래 라인 추가
+        System.Diagnostics.Debugger.Launch();
+
         // 소스 코드를 생성하는 로직을 추가합니다.
         context.RegisterSourceOutput(context.CompilationProvider, (spc, compilation) =>
         {
