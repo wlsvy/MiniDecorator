@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Linq;
+using System.Text;
 
 namespace MiniDecorator;
 
@@ -147,10 +147,31 @@ public static class Util
                                           """);
     }
 
-    public static string JoinLines(this IEnumerable<string> stringEnumerable, int tab)
+    public static StringBuilder TabEachLine(this StringBuilder builder, int tab)
     {
-        string separator = '\n' + new string('t', count: tab);
-        return string.Join(separator, stringEnumerable);
+        //첫 부분에는 탭을 추가하지 않는다.
+        for (int i = 0; i < builder.Length; i++)
+        {
+            if (builder[i] == '\n' &&
+                i + 1 < builder.Length)  // 개행 문자를 찾고, 문자열 끝이 아니면
+            {
+                builder.Insert(i + 1, new string('\t', count: tab));  // 다음 위치에 탭 추가
+                i++;  // 탭 문자 다음 위치로 인덱스 조정
+            }
+        }
+        return builder;
+    }
+
+    public static StringBuilder JoinLines(this IEnumerable<string> strEnumerable, int tab)
+    {
+        StringBuilder builder = new(string.Join("\n", strEnumerable));
+        return builder.TabEachLine(tab);
+    }
+
+    public static StringBuilder JoinLines(this IEnumerable<string> strEnumerable, string delimiter, int tab)
+    {
+        StringBuilder builder = new(string.Join($"{delimiter}\n", strEnumerable));
+        return builder.TabEachLine(tab);
     }
 }
 
